@@ -27,33 +27,30 @@ def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_inde
 
 
 def extract_features(source):
-    product_data = []
-    for filename in listdir(source):
-        with open('{}/{}'.format(source, filename), 'r', encoding='utf-8') as f:
-            content = f.read()
-            doc = html.fromstring(content)
+    with open(source, 'r', encoding='utf-8') as f:
+        content = f.read()
+        doc = html.fromstring(content)
 
-            data = {
-                'asin': filename[:-5],
-                'image': pageelements.get_image(doc),
-                'name': pageelements.get_name(doc),
-                'price': pageelements.get_price_val(doc),
-                'currency': pageelements.get_currency(doc),
-                'reviews_count': pageelements.get_reviews_count(doc),
-                'reviews': pageelements.get_reviews(doc),
-                'category_path': pageelements.get_category(doc),
-                'category': pageelements.get_top_category(doc),
-                'bsr': pageelements.get_bsr(doc),
-                'dim_x': pageelements.get_dim_x(doc),
-                'dim_y': pageelements.get_dim_y(doc),
-                'dim_z': pageelements.get_dim_z(doc),
-                'dim_unit': pageelements.get_dim_unit(doc),
-                'weight': pageelements.get_weight_val(doc),
-                'weight_unit': pageelements.get_weight_unit(doc)
-            }
+        data = {
+            'asin': source[:-5],
+            'image': pageelements.get_image(doc),
+            'name': pageelements.get_name(doc),
+            'price': pageelements.get_price_val(doc),
+            'currency': pageelements.get_currency(doc),
+            'reviews_count': pageelements.get_reviews_count(doc),
+            'reviews': pageelements.get_reviews(doc),
+            'category_path': pageelements.get_category(doc),
+            'category': pageelements.get_top_category(doc),
+            'bsr': pageelements.get_bsr(doc),
+            'dim_x': pageelements.get_dim_x(doc),
+            'dim_y': pageelements.get_dim_y(doc),
+            'dim_z': pageelements.get_dim_z(doc),
+            'dim_unit': pageelements.get_dim_unit(doc),
+            'weight': pageelements.get_weight_val(doc),
+            'weight_unit': pageelements.get_weight_unit(doc)
+        }
 
-            product_data.append(data)
-    return product_data
+    return data
 
 
 def fetch(asins, region='DE', target="c:/temp/amzniches"):
