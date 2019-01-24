@@ -1,6 +1,5 @@
 from urllib.parse import quote_plus
 import re
-import csv
 import requests
 import argparse
 from string import ascii_lowercase
