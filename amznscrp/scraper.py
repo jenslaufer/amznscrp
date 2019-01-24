@@ -26,13 +26,13 @@ def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_inde
     return asins
 
 
-def extract_features(source):
-    with open(source, 'r', encoding='utf-8') as f:
+def extract_features(folder, filename):
+    with open("{}/{}".format(folder, filename), 'r', encoding='utf-8') as f:
         content = f.read()
         doc = html.fromstring(content)
 
         data = {
-            'asin': source[:-5],
+            'asin': filename[:-5],
             'image': pageelements.get_image(doc),
             'name': pageelements.get_name(doc),
             'price': pageelements.get_price_val(doc),
