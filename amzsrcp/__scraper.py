@@ -7,46 +7,25 @@ import re
 from lxml import html
 import json
 import urllib
-import pymongo
 import datetime
 from . import pageelements
 from . import proxy
 from . import useragent
 
 
-def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_index='All', pages=1, force=False):
+def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_index='All', pages=1):
     amazon = bottlenose.Amazon(api_key, api_secret, affiliate_id,
                                Region=region, Parser=lambda text: BeautifulSoup(text, 'xml'))
-    client = pymongo.MongoClient("mongodb://localhost")
-    keyword_col = client['amazon']['keywords']
-    products_col = client['amazon']['products']
-    products_col.create_index([('asin', pymongo.ASCENDING)],
-                              name='asin_index', unique=True)
 
     asins = []
     to_fetch = True
     doc = None
-    if keyword_col.find({'query': keywords}).count() > 0:
-        doc = keyword_col.find_one({'query': keywords})
-        to_fetch = (not doc.is_fetched)
+    for itempage in range(1, (pages+1)):
+        results = amazon.ItemSearch(
+            Keywords=keywords, SearchIndex=search_index, ItemPage=str(itempage))
 
-    if force or to_fetch:
-        for itempage in range(1, (pages+1)):
-            results = amazon.ItemSearch(
-                Keywords=keywords, SearchIndex=search_index, ItemPage=str(itempage))
-
-            for asin in results.find_all('ASIN'):
-                asins.append(asin.text)
-                products_col.replace_one({'asin': asin.text}, {
-                    'asin': asin.text, 'created_date': datetime.datetime.utcnow()}, True)
-        if doc != None:
-            keyword_col.update_one({
-                '_id': doc['_id']
-            }, {
-                '$set': {
-                    'is_fetched': False
-                }
-            }, upsert=False)
+        for asin in results.find_all('ASIN'):
+            asins.append(asin.text)
 
     return asins
 

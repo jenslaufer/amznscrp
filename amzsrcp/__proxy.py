@@ -3,7 +3,7 @@ import pandas as pd
 
 class BonanzaProxy:
 
-    def __init__(self, proxyfile='amzscrp/proxylist.csv'):
+    def __init__(self, proxyfile='proxylist.csv'):
         self.proxies = pd.read_csv(proxyfile)
 
     def get(self):
