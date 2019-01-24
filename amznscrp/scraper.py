@@ -16,16 +16,13 @@ from . import useragent
 def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_index='All', pages=1):
     amazon = bottlenose.Amazon(api_key, api_secret, affiliate_id,
                                Region=region, Parser=lambda text: BeautifulSoup(text, 'xml'))
-
     asins = []
-    to_fetch = True
-    doc = None
     for itempage in range(1, (pages+1)):
         results = amazon.ItemSearch(
             Keywords=keywords, SearchIndex=search_index, ItemPage=str(itempage))
-
+        print(results)
         for asin in results.find_all('ASIN'):
-            asins.append(asin.text)
+            asins.append({'asin': asin.text})
 
     return asins
 
