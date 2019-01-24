@@ -7,7 +7,7 @@ setup(
     author_email='jenslaufer@gmail.com',
     packages=find_packages(),
     install_requires=['requests', 'argparse', 'bottlenose',
-                      'bs4', 'lxml', 'pymongo', 'json'],
+                      'bs4', 'lxml', 'pymongo'],
     version='0.0.1',
     license='MIT',
     description='Tools to scrp Amz',
