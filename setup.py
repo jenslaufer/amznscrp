@@ -1,13 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='amzsrcp',
     url='https://github.com/jenslaufer/amzsrcp',
     author='Jens Laufer',
     author_email='jenslaufer@gmail.com',
-    packages=['amzscrp'],
-    install_requires=['urllib','re','requests','argparse','string'],
-    version='0.1',
+    packages=find_packages(),
+    install_requires=['requests', 'argparse'],
+    version='0.0.1',
     license='MIT',
     description='Tools to scrp Amz',
 )
