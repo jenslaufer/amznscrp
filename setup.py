@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='amzsrcp',
-    url='https://github.com/jenslaufer/amzsrcp',
+    name='amznscrp',
+    url='https://github.com/jenslaufer/amznscrp.git',
     author='Jens Laufer',
     author_email='jenslaufer@gmail.com',
     packages=find_packages(),
