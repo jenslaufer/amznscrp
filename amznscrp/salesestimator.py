@@ -2,7 +2,6 @@ import urllib
 import os
 import requests
 import json
-import altair as alt
 import re
 import pandas as pd
 from get_smarties import Smarties
@@ -133,5 +132,8 @@ class SalesEstimator:
 
         return model
 
-    def estimate_sales(self, df):
+    def estimate_sales_on_df(self, df):
         return self.__model.predict(self.__one_hot_encoder.transform(df[['bsr', 'category']]))
+
+    def estimate_sales(self, bsr, category):
+        return self.__model.predict(self.__one_hot_encoder.transform(pd.DataFrame(data={'bsr': [bsr], 'category': [category]})))
