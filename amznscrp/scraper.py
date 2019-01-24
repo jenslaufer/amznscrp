@@ -20,7 +20,6 @@ def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_inde
     for itempage in range(1, (pages+1)):
         results = amazon.ItemSearch(
             Keywords=keywords, SearchIndex=search_index, ItemPage=str(itempage))
-        print(results)
         for asin in results.find_all('ASIN'):
             asins.append({'asin': asin.text})
 
