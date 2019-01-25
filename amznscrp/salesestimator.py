@@ -136,4 +136,4 @@ class SalesEstimator:
         return self.__model.predict(self.__one_hot_encoder.transform(df[['bsr', 'category']]))
 
     def estimate_sales(self, bsr, category):
-        return self.__model.predict(self.__one_hot_encoder.transform(pd.DataFrame(data={'bsr': [bsr], 'category': [category]})))
+        return self.__model.predict(self.__one_hot_encoder.transform(pd.DataFrame(data={'bsr': [bsr], 'category': [category]})))[0]
