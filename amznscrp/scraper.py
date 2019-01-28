@@ -51,32 +51,17 @@ def extract_features(asin, content):
     return data
 
 
-def fetch(asins, proxy_srv, user_agents,  region='DE', target="c:/temp/amzniches"):
-    if not os.path.exists(target):
-        os.makedirs(target)
-
+def fetch(asin, proxy_srv, user_agents,  region='DE'):
     if region == 'DE':
         base_url = "http://www.amazon.de"
 
-    for asin in asins:
-        filename = '{}/{}.html'.format(target, asin)
-        to_fetch = True
-
-        if os.path.exists(filename):
-            size = os.path.getsize(filename)
-            if size > 10000:
-                to_fetch = False
-
-        if to_fetch:
-            url = "{}/dp/{}".format(base_url, asin)
-            print("Downloading: "+url)
-            headers = {
-                'User-Agent': user_agents.get()}
-            proxies = proxy_srv.get()
-            try:
-                res = requests.get(url, headers=headers, proxies=proxies)
-
-                with open(filename, 'w', encoding=res.encoding) as file:
-                    file.write(res.text)
-            except Exception as e:
-                print(e)
+    url = "{}/dp/{}".format(base_url, asin)
+    print("Downloading: "+url)
+    headers = {
+        'User-Agent': user_agents.get()}
+    proxies = proxy_srv.get()
+    try:
+        res = requests.get(url, headers=headers, proxies=proxies)
+        return res.text
+    except Exception as e:
+        print(e)
