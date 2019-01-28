@@ -7,7 +7,7 @@ setup(
     author_email='jenslaufer@gmail.com',
     packages=['amznscrp'],
     install_requires=['requests', 'argparse', 'bottlenose',
-                      'bs4', 'lxml', 'get_smarties', 'scikit-learn', 'pandas', 'numpy'],
+                      'bs4', 'lxml', 'get_smarties', 'scikit-learn', 'pandas', 'numpy', 'json'],
     version='0.0.1',
     license='MIT',
     description='Tools to scrp Amz',

@@ -2,6 +2,7 @@ from urllib.parse import quote_plus
 import re
 import requests
 import argparse
+import json
 from string import ascii_lowercase
 
 headers = {
@@ -27,4 +28,4 @@ def scrape(keyword):
             r'obfuscatedMarketId:\s"(.*)"'), resp)[0]
         result = s.get(uri.format(mid, f_kwrd))
 
-    return result.content
+    return json.loads(result.content)
