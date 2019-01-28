@@ -4,13 +4,9 @@ import requests
 import argparse
 import json
 from string import ascii_lowercase
-from . import useragent, proxy
 
 
-def scrape(keyword, proxyfile, useragentfile):
-    proxy_srv = proxy.BonanzaProxy(proxyfile)
-    user_agents = useragent.UserAgent(useragentfile)
-
+def scrape(keyword, proxy_srv, user_agents):
     s = requests.session()
     headers = {
         'User-Agent': user_agents.get(),

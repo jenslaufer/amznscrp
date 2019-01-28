@@ -51,9 +51,7 @@ def extract_features(asin, content):
     return data
 
 
-def fetch(asins, proxyfile, useragentfile,  region='DE', target="c:/temp/amzniches"):
-    proxy_srv = proxy.BonanzaProxy(proxyfile)
-    user_agents = useragent.UserAgent(useragentfile)
+def fetch(asins, proxy_srv, user_agents,  region='DE', target="c:/temp/amzniches"):
     if not os.path.exists(target):
         os.makedirs(target)
 
