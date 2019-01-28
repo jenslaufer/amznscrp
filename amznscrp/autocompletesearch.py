@@ -11,7 +11,7 @@ headers = {
 }
 
 
-def scrape(keywords):
+def scrape(keyword):
     s = requests.session()
     s.headers.update(headers)
     base_url = 'https://completion.amazon.co.uk'
@@ -20,14 +20,13 @@ def scrape(keywords):
     uri = '{0}/api/2017/suggestions?lop={1}&mid={2}&alias=aps&prefix={3}'
 
     results = []
-    for kwrd in keywords:
-        f_kwrd = quote_plus(kwrd)
-        result = s.get(uri.format(base_url, lop, mid, f_kwrd))
-        if "Invalid Marketplace ID" in result.text:
-            resp = s.get(base_url).text
-            mid = re.findall(re.compile(
-                r'obfuscatedMarketId:\s"(.*)"'), resp)[0]
-            result = s.get(uri.format(mid, f_kwrd))
-        results.append(result)
+    f_kwrd = quote_plus(keyword)
+    result = s.get(uri.format(base_url, lop, mid, f_kwrd))
+    if "Invalid Marketplace ID" in result.text:
+        resp = s.get(base_url).text
+        mid = re.findall(re.compile(
+            r'obfuscatedMarketId:\s"(.*)"'), resp)[0]
+        result = s.get(uri.format(mid, f_kwrd))
+    results.append(result)
 
     return results
