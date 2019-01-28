@@ -12,6 +12,8 @@ headers = {
 
 
 def scrape(keywords):
+    s = requests.session()
+    s.headers.update(headers)
     base_url = 'https://completion.amazon.co.uk'
     mid = 'A1PA6795UKMFR9'
     lop = 'de_DE'
@@ -29,26 +31,3 @@ def scrape(keywords):
         results.append(result)
 
     return results
-
-
-if __name__ == '__main__':
-    s = requests.session()
-    s.headers.update(headers)
-
-    parser = argparse.ArgumentParser(
-        description='Scrapes keyword suggestions from Amazon Search.')
-    parser.add_argument('keywords', metavar='keywords', type=str, nargs='+',
-                        help='root keyword')
-    parser.add_argument('--alphabet', action='store_true',
-                        help='added alphabetical keywords')
-
-    args = parser.parse_args()
-
-    keywords = args.keywords
-    if args.alphabet:
-        keywords = []
-        for keyword in args.keywords:
-            for c in ascii_lowercase:
-                keywords.append(keyword+" "+c)
-
-    scrape(keywords)
