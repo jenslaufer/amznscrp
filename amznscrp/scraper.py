@@ -51,7 +51,7 @@ def extract_features(asin, content):
     return data
 
 
-def fetch(asin, proxy_srv, user_agents,  region='DE'):
+def fetch(asin, proxy_srv, user_agents, region='DE'):
     if region == 'DE':
         base_url = "http://www.amazon.de"
 
@@ -62,6 +62,6 @@ def fetch(asin, proxy_srv, user_agents,  region='DE'):
     proxies = proxy_srv.get()
     try:
         res = requests.get(url, headers=headers, proxies=proxies)
-        return res.text
+        return {"asin": asin, "result": res.text}
     except Exception as e:
         print(e)
