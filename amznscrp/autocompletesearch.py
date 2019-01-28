@@ -19,7 +19,6 @@ def scrape(keyword):
     lop = 'de_DE'
     uri = '{0}/api/2017/suggestions?lop={1}&mid={2}&alias=aps&prefix={3}'
 
-    results = []
     f_kwrd = quote_plus(keyword)
     result = s.get(uri.format(base_url, lop, mid, f_kwrd))
     if "Invalid Marketplace ID" in result.text:
@@ -27,6 +26,5 @@ def scrape(keyword):
         mid = re.findall(re.compile(
             r'obfuscatedMarketId:\s"(.*)"'), resp)[0]
         result = s.get(uri.format(mid, f_kwrd))
-    results.append(result)
 
-    return results
+    return result.content
