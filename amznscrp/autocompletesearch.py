@@ -4,13 +4,17 @@ import requests
 import argparse
 import json
 from string import ascii_lowercase
+from . import useragent, proxy
 
 
-def scrape(keyword, proxy_srv, agent_srv):
+def scrape(keyword):
+    proxy_srv = proxy.BonanzaProxy()
+    user_agents = useragent.UserAgent()
+
     s = requests.session()
     s.headers.update(
         headers={
-            'User-Agent': agent_srv.get(),
+            'User-Agent': user_agents.get(),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
         })
     base_url = 'https://completion.amazon.co.uk'
