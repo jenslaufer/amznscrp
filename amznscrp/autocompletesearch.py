@@ -7,9 +7,9 @@ from string import ascii_lowercase
 from . import useragent, proxy
 
 
-def scrape(keyword):
-    proxy_srv = proxy.BonanzaProxy()
-    user_agents = useragent.UserAgent()
+def scrape(keyword, proxyfile, useragentfile):
+    proxy_srv = proxy.BonanzaProxy(proxyfile)
+    user_agents = useragent.UserAgent(useragentfile)
 
     s = requests.session()
     s.headers.update(

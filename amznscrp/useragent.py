@@ -2,7 +2,7 @@ import random
 
 
 class UserAgent:
-    def __init__(self, useragentsfile='useragents.txt'):
+    def __init__(self, useragentsfile):
         with open(useragentsfile, "r") as f:
             self.user_agents = f.readlines()
 
