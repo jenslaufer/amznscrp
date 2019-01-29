@@ -8,12 +8,13 @@ from lxml import html
 import json
 import urllib
 import datetime
+from urllib.parse import quote_plus
 from . import pageelements
 from . import proxy
 from . import useragent
 
 
-def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_index='All', pages=1):
+def search_api(api_key, api_secret, affiliate_id, keywords, region='DE', search_index='All', pages=1):
     amazon = bottlenose.Amazon(api_key, api_secret, affiliate_id,
                                Region=region, Parser=lambda text: BeautifulSoup(text, 'xml'))
     asins = []
@@ -24,6 +25,23 @@ def search(api_key, api_secret, affiliate_id, keywords, region='DE', search_inde
             asins.append({'asin': asin.text})
 
     return asins
+
+
+def search(keyword, proxy_srv, user_agents):
+    s = requests.session()
+    headers = {
+        'User-Agent': user_agents.get(),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    }
+    proxies = proxy_srv.get()
+    url = "https://www.amazon.de/s/ref=nb_sb_noss_2?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&url=search-alias%3Daps&field-keywords={}".format(
+        quote_plus(keyword))
+    try:
+        result = s.get(url, headers=headers, proxies=proxies)
+
+        return {"keyword": keyword, "content": result.content}
+    except Exception as e:
+        print(e)
 
 
 def extract_features(asin, content):

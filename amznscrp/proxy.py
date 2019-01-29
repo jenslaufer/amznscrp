@@ -1,7 +1,15 @@
 import pandas as pd
 
 
-class BonanzaProxy:
+class Proxy:
+    def __init__(self):
+        pass
+
+    def get(self):
+        return None
+
+
+class BonanzaProxy(Proxy):
 
     def __init__(self, proxyfile):
         self.proxies = pd.read_csv(proxyfile)
