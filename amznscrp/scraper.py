@@ -62,6 +62,6 @@ def fetch(asin, proxy_srv, user_agents, region='DE'):
     proxies = proxy_srv.get()
     try:
         res = requests.get(url, headers=headers, proxies=proxies)
-        return {"asin": asin, "result": res.text}
+        return {"asin": asin, "content": res.text}
     except Exception as e:
         print(e)
