@@ -3,7 +3,6 @@ import requests
 import json
 import time
 import re
-from bs4 import BeautifulSoup
 
 
 class ProductPage:
@@ -149,7 +148,7 @@ class ProductPage:
                 raw_price = doc.xpath(xpath_priceblock_ourprice)
                 if not raw_price:
                     raw_price = doc.xpath(xpath_olp_sl_new)
-            #print("{}: {}".format(get_name(doc), raw_price))
+            # print("{}: {}".format(get_name(doc), raw_price))
 
             price = ' '.join(
                 ''.join(raw_price).split()).strip() if raw_price else None
@@ -161,7 +160,7 @@ class ProductPage:
     @staticmethod
     def get_price_val(doc):
         try:
-            return float(Product.get_price(doc)[4:].replace(",", "."))
+            return float(ProductPage.get_price(doc)[4:].replace(",", "."))
         except Exception:
             return None
 
@@ -187,4 +186,86 @@ class ProductPage:
                 REVIEWS = int(re.search(r"([0-9]+)", REVIEWS).group(1))
             return REVIEWS
         except Exception:
+            return None
+
+
+class SearchPage:
+
+    @staticmethod
+    def get_products(doc):
+        results = []
+        lis = doc.xpath('//*[@id="s-results-list-atf"]/li')
+        for li in lis:
+            asin = SearchPage.get_asin(li)
+            name = SearchPage.get_name(li)
+            price = SearchPage.get_price(li)
+            currency = SearchPage.get_currency(li)
+            reviews_count = SearchPage.get_reviews_count(li)
+            reviews = SearchPage.get_reviews(li)
+
+            results.append(
+                {'asin': asin,
+                 'name': name,
+                 'price': price,
+                 'currency': currency,
+                 'reviews': reviews,
+                 'reviews_count': reviews_count})
+
+        return results
+
+    @staticmethod
+    def get_asin(doc):
+        try:
+            return doc.get('data-asin')
+        except:
+            return None
+
+    @staticmethod
+    def get_name(doc):
+        try:
+            elements = doc.xpath('.//h2/@data-attribute')
+            if len(elements) >= 1:
+                return elements[0]
+        except Exception as e:
+            return None
+
+    @staticmethod
+    def get_price(doc):
+        try:
+            elements = doc.xpath(
+                './/*[@class="a-size-base a-color-price s-price a-text-bold"]/text()')
+            if len(elements) >= 1:
+                return float(elements[0][4:].strip().replace(",", "."))
+        except:
+            return None
+
+    @staticmethod
+    def get_currency(doc):
+        try:
+            elements = doc.xpath(
+                './/*[@class="a-size-base a-color-price s-price a-text-bold"]/text()')
+            if len(elements) >= 1:
+                return elements[0][:3].strip()
+        except Exception as e:
+            print(e)
+            return None
+
+    @staticmethod
+    def get_reviews_count(doc):
+        try:
+            elements = doc.xpath(
+                './/*[@class="a-size-small a-link-normal a-text-normal"]/text()')
+            if len(elements) >= 1:
+                return float(elements[0].strip().replace(",", "."))
+        except:
+            return None
+
+    @staticmethod
+    def get_reviews(doc):
+        try:
+            elements = doc.xpath(
+                './/*[@class="a-icon-alt"]/text()')
+            if len(elements) >= 2:
+                return float(elements[1][:3].strip().replace(",", "."))
+        except:
             return None

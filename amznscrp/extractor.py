@@ -8,21 +8,27 @@ def extract_product_features(asin, content):
 
     data = {
         'asin': asin,
-        'image': pageelements.Product.get_image(doc),
-        'name': pageelements.Product.get_name(doc),
-        'price': pageelements.Product.get_price_val(doc),
-        'currency': pageelements.Product.get_currency(doc),
-        'reviews_count': pageelements.Product.get_reviews_count(doc),
-        'reviews': pageelements.Product.get_reviews(doc),
-        'category_path': pageelements.Product.get_category(doc),
-        'category': pageelements.Product.get_top_category(doc),
-        'bsr': pageelements.Product.get_bsr(doc),
-        'dim_x': pageelements.Product.get_dim_x(doc),
-        'dim_y': pageelements.Product.get_dim_y(doc),
-        'dim_z': pageelements.Product.get_dim_z(doc),
-        'dim_unit': pageelements.Product.get_dim_unit(doc),
-        'weight': pageelements.Product.get_weight_val(doc),
-        'weight_unit': pageelements.Product.get_weight_unit(doc)
+        'image': pageelements.ProductPage.get_image(doc),
+        'name': pageelements.ProductPage.get_name(doc),
+        'price': pageelements.ProductPage.get_price_val(doc),
+        'currency': pageelements.ProductPage.get_currency(doc),
+        'reviews_count': pageelements.ProductPage.get_reviews_count(doc),
+        'reviews': pageelements.ProductPage.get_reviews(doc),
+        'category_path': pageelements.ProductPage.get_category(doc),
+        'category': pageelements.ProductPage.get_top_category(doc),
+        'bsr': pageelements.ProductPage.get_bsr(doc),
+        'dim_x': pageelements.ProductPage.get_dim_x(doc),
+        'dim_y': pageelements.ProductPage.get_dim_y(doc),
+        'dim_z': pageelements.ProductPage.get_dim_z(doc),
+        'dim_unit': pageelements.ProductPage.get_dim_unit(doc),
+        'weight': pageelements.ProductPage.get_weight_val(doc),
+        'weight_unit': pageelements.ProductPage.get_weight_unit(doc)
     }
 
     return data
+
+
+def extract_search_product_features(content):
+    doc = html.fromstring(content)
+
+    return pageelements.SearchPage.get_products(doc)
