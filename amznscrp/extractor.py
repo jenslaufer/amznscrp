@@ -29,6 +29,4 @@ def extract_product_features(asin, content):
 
 
 def extract_search_product_features(keyword, content):
-    doc = html.fromstring(content)
-
-    return pageelements.SearchPage.get_products(keyword, doc)
+    return pageelements.SearchPage.get_products(keyword, html.fromstring(content))
