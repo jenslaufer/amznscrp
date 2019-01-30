@@ -5,4 +5,5 @@
         "--verbose",
         "-s"
     ],
+    "python.unitTest.pyTestPath": "test",
 }
