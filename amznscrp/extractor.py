@@ -28,7 +28,7 @@ def extract_product_features(asin, content):
     return data
 
 
-def extract_search_product_features(content):
+def extract_search_product_features(keyword, content):
     doc = html.fromstring(content)
 
-    return pageelements.SearchPage.get_products(doc)
+    return pageelements.SearchPage.get_products(keyword, doc)

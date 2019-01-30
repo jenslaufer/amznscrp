@@ -192,7 +192,7 @@ class ProductPage:
 class SearchPage:
 
     @staticmethod
-    def get_products(doc):
+    def get_products(keyword, doc):
         results = []
         lis = doc.xpath('//*[@id="s-results-list-atf"]/li')
         for li in lis:
@@ -205,6 +205,7 @@ class SearchPage:
 
             results.append(
                 {'asin': asin,
+                 'keyword': keyword,
                  'name': name,
                  'price': price,
                  'currency': currency,
