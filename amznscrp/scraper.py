@@ -35,6 +35,7 @@ def search(keyword, proxy_srv, user_agents):
     url = "https://www.amazon.de/s/ref=nb_sb_noss_2?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&url=search-alias%3Daps&field-keywords={}".format(
         quote_plus(keyword))
     try:
+        print("get search page for {}".format(keyword))
         result = s.get(url, headers=headers, proxies=proxies)
 
         return {"keyword": keyword, "content": result.content}
