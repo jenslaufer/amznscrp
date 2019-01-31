@@ -194,7 +194,7 @@ class SearchPage:
     @staticmethod
     def get_products(keyword, doc):
         results = []
-        lis = doc.xpath('//*[@id="s-results-list-atf"]/li')
+        lis = doc.xpath('//li[starts-with(@id, "result_")]')
         for li in lis:
             asin = SearchPage.get_asin(li)
             name = SearchPage.get_name(li)
