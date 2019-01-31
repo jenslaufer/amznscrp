@@ -202,6 +202,7 @@ class SearchPage:
             currency = SearchPage.get_currency(li)
             reviews_count = SearchPage.get_reviews_count(li)
             reviews = SearchPage.get_reviews(li)
+            img = SearchPage.get_image(li)
 
             results.append(
                 {'asin': asin,
@@ -210,6 +211,7 @@ class SearchPage:
                  'price': price,
                  'currency': currency,
                  'reviews': reviews,
+                 'img': img,
                  'reviews_count': reviews_count})
 
         return results
@@ -266,7 +268,20 @@ class SearchPage:
         try:
             elements = doc.xpath(
                 './/*[@class="a-icon-alt"]/text()')
-            if len(elements) >= 2:
+            if len(elements) == 1:
+                return float(elements[0][:3].strip().replace(",", "."))
+            elif len(elements) == 2:
                 return float(elements[1][:3].strip().replace(",", "."))
         except:
+            return None
+
+    @staticmethod
+    def get_image(doc):
+        try:
+            elements = doc.xpath(
+                './/*[@class="s-access-image cfMarker"]/@src')
+            if len(elements) == 1:
+                return elements[0]
+        except Exception as e:
+            print("{}", e)
             return None
