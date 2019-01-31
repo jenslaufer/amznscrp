@@ -193,8 +193,15 @@ class SearchPage:
 
     @staticmethod
     def get_products(keyword, doc):
+        query = '//li[starts-with(@id, "result_")]'
+        #query = '//ul[@id="s-results-list-atf"]/li'
+        #query = '//ul[@id="s-results-list-atf"]/li'
+        return SearchPage.__get_results_for_xpath(keyword, doc, query)
+
+    @staticmethod
+    def __get_results_for_xpath(keyword, doc, query):
+        lis = doc.xpath(query)
         results = []
-        lis = doc.xpath('//li[starts-with(@id, "result_")]')
         for li in lis:
             asin = SearchPage.get_asin(li)
             name = SearchPage.get_name(li)

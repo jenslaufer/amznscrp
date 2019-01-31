@@ -3,11 +3,12 @@ import codecs
 
 
 def test_search():
-    with codecs.open("test/resources/d741e464-92aa-494f-84cc-88986b441d54.html", 'r', encoding='utf-8') as f:
-        # with codecs.open("test/resources/8a5f1508-bf08-41f7-8d09-731861053b4f.html", 'r', encoding='utf-8') as f:
+    with codecs.open("test/resources/10b22925-aa3f-46c4-8c6a-228d2863fa05.html", 'r', encoding='utf-8') as f:
         content = f.read()
 
         result = extractor.extract_search_product_features("bla", content)
         print(result)
+
+        print([res['name'] for res in result])
         assert type(result) == list
         assert len(result) == 22
