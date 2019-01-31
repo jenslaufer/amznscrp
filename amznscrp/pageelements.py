@@ -218,15 +218,17 @@ class SearchPage:
 
     @staticmethod
     def get_asin(doc):
+        field_name = 'data-asin'
         try:
-            return doc.get('data-asin')
+            return doc.get(field_name)
         except:
             return None
 
     @staticmethod
     def get_name(doc):
+        query = './/h2/@data-attribute'
         try:
-            elements = doc.xpath('.//h2/@data-attribute')
+            elements = doc.xpath(query)
             if len(elements) >= 1:
                 return elements[0]
         except Exception as e:
@@ -234,9 +236,9 @@ class SearchPage:
 
     @staticmethod
     def get_price(doc):
+        query = './/*[@class="a-size-base a-color-price s-price a-text-bold"]/text()'
         try:
-            elements = doc.xpath(
-                './/*[@class="a-size-base a-color-price s-price a-text-bold"]/text()')
+            elements = doc.xpath(query)
             if len(elements) >= 1:
                 return float(elements[0][4:].strip().replace(",", "."))
         except:
@@ -244,9 +246,9 @@ class SearchPage:
 
     @staticmethod
     def get_currency(doc):
+        query = './/*[@class="a-size-base a-color-price s-price a-text-bold"]/text()'
         try:
-            elements = doc.xpath(
-                './/*[@class="a-size-base a-color-price s-price a-text-bold"]/text()')
+            elements = doc.xpath(query)
             if len(elements) >= 1:
                 return elements[0][:3].strip()
         except Exception as e:
@@ -255,9 +257,9 @@ class SearchPage:
 
     @staticmethod
     def get_reviews_count(doc):
+        query = './/*[@class="a-size-small a-link-normal a-text-normal"]/text()'
         try:
-            elements = doc.xpath(
-                './/*[@class="a-size-small a-link-normal a-text-normal"]/text()')
+            elements = doc.xpath(query)
             if len(elements) >= 1:
                 return float(elements[0].strip().replace(",", "."))
         except:
@@ -265,9 +267,9 @@ class SearchPage:
 
     @staticmethod
     def get_reviews(doc):
+        query = './/*[@class="a-icon-alt"]/text()'
         try:
-            elements = doc.xpath(
-                './/*[@class="a-icon-alt"]/text()')
+            elements = doc.xpath(query)
             if len(elements) == 1:
                 return float(elements[0][:3].strip().replace(",", "."))
             elif len(elements) == 2:
@@ -277,9 +279,9 @@ class SearchPage:
 
     @staticmethod
     def get_image(doc):
+        query = './/*[@class="s-access-image cfMarker"]/@src'
         try:
-            elements = doc.xpath(
-                './/*[@class="s-access-image cfMarker"]/@src')
+            elements = doc.xpath(query)
             if len(elements) == 1:
                 return elements[0]
         except Exception as e:
