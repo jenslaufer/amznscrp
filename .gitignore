@@ -3,3 +3,4 @@ amznscrp/__pycache__/
 tests/__pycache__/test_extractor.cpython-36-PYTEST.pyc
 test/__pycache__/
 test/resources/alt.html
+src/pip-delete-this-directory.txt
