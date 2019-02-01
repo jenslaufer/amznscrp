@@ -218,7 +218,7 @@ class SearchPage:
                  'price': price,
                  'currency': currency,
                  'reviews': reviews,
-                 'img': img,
+                 'image': img,
                  'reviews_count': reviews_count})
 
         return results
