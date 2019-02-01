@@ -6,7 +6,7 @@ setup(
     author='Jens Laufer',
     author_email='jenslaufer@gmail.com',
     packages=['amznscrp'],
-    install_requires=['requests', 'argparse', 'bottlenose',
+    install_requires=['requests', 'bottlenose',
                       'lxml', 'get_smarties',
                       'scikit-learn',
                       'pandas', 'numpy'],
