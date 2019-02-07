@@ -5,7 +5,7 @@ setup(
     url='https://github.com/jenslaufer/amznscrp.git',
     author='Jens Laufer',
     author_email='jenslaufer@gmail.com',
-    packages=['amznscrp'],
+    packages=find_packages(),  # ['amznscrp'],
     install_requires=['requests', 'bottlenose',
                       'lxml',
                       'scikit-learn',

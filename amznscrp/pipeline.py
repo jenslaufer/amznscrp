@@ -1,182 +1,100 @@
-
-import sys
-import pandas as pd
-import numpy as np
-import argparse
-import pymongo
-import gridfs
-import os
-import datetime
 import time
-from sklearn.utils import shuffle
-from string import ascii_lowercase
-from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import ProcessingPool
+from . import useragent, proxy, extractor, scraper
+from pymongo import MongoClient
+import gridfs
+
+import datetime
 import uuid
+import pandas as pd
 
 
-def __extract_search_features(extractor, keyword, content):
-    try:
-        return extractor.extract_search_product_features(keyword, content)
-    except Exception as e:
-        print("{}".format(e))
+class Pipeline:
 
+    def __init__(self,  proxy, useragent, mongourl="mongodb://localhost"):
+        self.proxy = proxy
+        self.useragent = useragent
+        self.scraper = scraper
+        self.extractor = extractor
+        self.db = MongoClient(mongourl)['amazon']
 
-def __extract_search_features_wrapper(args):
-    return __extract_search_features(*args)
+        self.keyword_col_name = 'keywords'
+        self.keyword_parent_col_name = 'keyword_parent'
+        self.product_col_name = 'products'
 
+    def __scrape_search(self, keyword):
+        import uuid
+        import gridfs
+        import datetime
+        try:
+            keywords_coll = self.db[self.keyword_col_name]
+            fs = gridfs.GridFS(self.db)
 
-def __scrape_search(scraper, proxy_srv, useragents, keyword):
-    return scraper.search(keyword, proxy_srv, useragents)
+            result = self.scraper.search(
+                keyword, self.proxy, self.useragent)
+            filename = '{}.html'.format(str(uuid.uuid4()))
+            fs.put(result['content'], filename=filename,
+                   encoding="utf-8", contentType="text/html", doc_type="search")
 
+            keyword_metadata = {}
+            keyword_metadata['last_modified'] = datetime.datetime.utcnow()
+            keyword_metadata['filename'] = filename
+            keywords_coll.update_one({'keyword': result['keyword']}, {
+                '$set': keyword_metadata}, True)
+        except Exception as e:
+            print("problem with {}: {}".format(keyword, e))
 
-def __scrape_search_wrapper(args):
-    return __scrape_search(*args)
+    def __scrape_search_wrapper(self, keyword):
+        return self.__scrape_search(keyword)
 
+    def __extract_searches_features(self, keyword):
+        import gridfs
+        import datetime
 
-def __scrape_product(scraper, proxy_srv, useragents, asin):
-    return scraper.fetch(asin, proxy_srv, useragents)
-
-
-def __scrape_product_wrapper(args):
-    return __scrape_product(*args)
-
-
-def __extract_features(extractor, estimator, asin, content):
-    try:
-        features = extractor.extract_product_features(asin, content)
-
-        features['last_modified'] = datetime.datetime.utcnow()
-
-        category = features['category']
-        bsr = features['bsr']
-        sales = estimator.estimate_sales(bsr, category)
-        features['sales'] = sales
-
-        return features
-
-    except Exception as e:
-        print("{}: {}".format(asin, e))
-
-
-def __feature_extractor_wrapper(args):
-    return __extract_features(*args)
-
-
-def scrape_keywords(keywords):
-    for keyword in keywords:
-        results = [{'parent': keyword['parent'], 'keyword':suggestion['value']}
-                   for suggestion in autocompletesearch.scrape(keyword['keyword'], proxy_srv, useragent_srv)['suggestions']]
-        for result in results:
-            num = keywords_coll.count({'keyword': result['keyword']})
-            if num == 0:
+        try:
+            keywords_coll = self.db[self.keyword_col_name]
+            products_coll = self.db[self.product_col_name]
+            fs = gridfs.GridFS(self.db)
+            keyword_data = keywords_coll.find_one({'keyword': keyword})
+            content = fs.get_last_version(keyword_data['filename']).read()
+            results = self.extractor.extract_search_product_features(
+                keyword, content)
+            for result in results:
                 result['last_modified'] = datetime.datetime.utcnow()
-                result['is_fetched'] = False
-                keywords_coll.replace_one(
-                    {'keyword': result['keyword']}, result, True)
-    return [keyword['parent'] for keyword in keywords]
-
-
-def scrape_search(parent_keywords, force=False):
-    keywords_df = pd.DataFrame(list(keywords_coll.find(
-        {"is_fetched": False, "parent": {"$in": parent_keywords}})))
-
-    params = []
-    for key, row in keywords_df.iterrows():
-        keyword = row['keyword']
-
-        num = products_coll.count({'keyword': keyword})
-
-        print("{}: {}".format(keyword, num))
-        if num == 0 or force:
-            try:
-                params.append((scraper, proxy_srv, useragent_srv, keyword))
-            except Exception as e:
-                print(e)
-
-    pool = Pool(20)
-    results = pool.map(__scrape_search_wrapper, params)
-
-    for result in results:
-        filename = '{}.html'.format(str(uuid.uuid4()))
-        keyword_metadata = {}
-        keyword_metadata['last_modified'] = datetime.datetime.utcnow()
-        keyword_metadata['keyword'] = result['keyword']
-        keyword_metadata['is_fetched'] = True
-        keyword_metadata['filename'] = filename
-
-        fs.put(result['content'], filename=filename,
-               encoding="utf-8", contentType="text/html", doc_type="search")
-        keywords_coll.update({'keyword': result['keyword']}, {
-            '$set': keyword_metadata})
-
-    keywords_df = pd.DataFrame(list(keywords_coll.find(
-        {"filename": {'$exists': True}, "parent": {"$in": parent_keywords}})))
-    params = []
-    for key, row in keywords_df.iterrows():
-        try:
-            content = fs.get_last_version(row['filename']).read()
-            params.append((extractor, row['keyword'], content))
+                products_coll.update_one({'asin': result['asin'], 'keyword': keyword}, {
+                    '$set': result}, True)
         except Exception as e:
-            print("{}".format(e))
+            print("failed to extract keyword '{}': {}".format(keyword, e))
 
-    pool = Pool(20)
-    results = pool.map(__extract_search_features_wrapper, params)
-    print(results)
-    for result in results:
-        for product in result:
-            product['last_modified'] = datetime.datetime.utcnow()
-            products_coll.update_one({'asin': product['asin']}, {
-                '$set': product}, False)
+    def __extract_searches_features_wrapper(self, keyword):
+        return self.__extract_searches_features(keyword)
+
+    def scrape_searches(self, keywords):
+        params = []
+        for keyword in keywords:
+            num = self.db['keywords'].count_documents(
+                {'keyword': keyword, 'filename': {'$exists': True}})
+            if num == 0:
+                params.append(keyword)
+        pool = ProcessingPool(10)
+        return pool.map(self.__scrape_search_wrapper, params)
+
+    def extract_searches_features(self, keywords):
+        params = []
+        for keyword in keywords:
+            params.append(keyword)
+        pool = ProcessingPool(20)
+        return pool.map(self.__extract_searches_features_wrapper, params)
 
 
-def scrape_product_details(parent_keywords):
-    keywords_df = pd.DataFrame(
-        list(keywords_coll.find({"parent": {"$in": parent_keywords}})))
-    products_df = pd.DataFrame(
-        list(products_coll.find({"bsr": {'$exists': False}})))
-    products_df = pd.merge(
-        products_df, keywords_df[['parent', 'keyword']], on="keyword", how="inner")
+if __name__ == '__main__':
+    proxy_srv = proxy.BonanzaProxy('', '')
+    useragent_srv = useragent.UserAgent()
+    pipeline = Pipeline(proxy_srv, useragent_srv)
+    client = MongoClient()
+    db = client['amazon']
+    keywords = list(set(pd.DataFrame(list(db['keywords'].find({})))[
+        ['keyword']]['keyword'].tolist()))
 
-    params = []
-    num = 0
-    for key, row in products_df.iterrows():
-        asin = row['asin']
-        filename = "{}.html".format(asin)
-        try:
-            fs.get_last_version(filename)
-            print("Product {} already scraped.".format(asin))
-        except Exception as e:
-            params.append((scraper, proxy_srv, useragent_srv, asin))
-
-    pool = Pool(10)
-    results = pool.map(__scrape_product_wrapper, params)
-
-    for result in results:
-        fs.put(result['content'], filename="{}.html".format(result['asin']),
-               encoding="utf-8", contentType="text/html", doc_type="product")
-
-    estimator = SalesEstimator(
-        path='./product_search/data/', force_new_model_creation=False, force_teaching=False)
-
-    params = []
-    for index, row in products_df.iterrows():
-        filename = "{}.html".format(row['asin'])
-        asin = filename[:-5]
-        try:
-            print(asin)
-            content = fs.get_last_version(filename).read()
-            params.append((extractor, estimator, asin,
-                           content))
-        except gridfs.errors.NoFile as nf:
-            print("no file: {}".format(nf))
-            products_coll.remove({'asin': asin})
-
-    start = time.time()
-    pool = Pool(20)
-    results = pool.map(__feature_extractor_wrapper, params)
-    print(time.time() - start)
-
-    for result in results:
-        if result != None:
-            products_coll.update_one({'asin': result['asin']}, {
-                '$set': result}, False)
+    pipeline.scrape_searches(keywords)
+    pipeline.extract_searches_features(keywords)
