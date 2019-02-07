@@ -1,4 +1,5 @@
 import pandas as pd
+import pkg_resources
 
 
 class Proxy:
@@ -11,16 +12,19 @@ class Proxy:
 
 class BonanzaProxy(Proxy):
 
-    def __init__(self, proxyfile):
-        self.proxies = pd.read_csv(proxyfile)
+    def __init__(self, username, password):
+        path = 'amznscrp/resources/proxies.csv'
+        filepath = pkg_resources.resource_filename(__name__, path)
+        self.proxies = pd.read_csv(filepath)
+        self.username = username
+        self.password = password
 
     def get(self):
         proxies = {}
         row = self.proxies.sample(1)
-        proxy = "http://{}:{}@{}:{}/".format(row.iloc[0]['login'],
-                                             row.iloc[0]['password'],
-                                             row.iloc[0]['ip'],
-                                             row.iloc[0]['port_http'])
+        proxy = "http://{}:{}@{}".format(self.username,
+                                         self.password,
+                                         row.iloc[0]['host'])
         proxies['http'] = proxy
         proxies['https'] = proxy
 
