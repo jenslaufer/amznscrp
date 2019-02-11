@@ -84,7 +84,6 @@ class Pipeline:
                 {'keyword': keyword, 'filename': {'$exists': True}})
             if num == 0:
                 params.append(keyword)
-            break
         pool = ProcessingPool(1)
         return pool.map(self.__scrape_search_wrapper, params)
 
@@ -92,7 +91,7 @@ class Pipeline:
         params = []
         for keyword in keywords:
             params.append(keyword)
-        pool = ProcessingPool(10)
+        pool = ProcessingPool(20)
         return pool.map(self.__extract_searches_features_wrapper, params)
 
     def scrape_keywords(self, keywords_groups):
