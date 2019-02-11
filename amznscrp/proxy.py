@@ -27,5 +27,4 @@ class BonanzaProxy(Proxy):
                                          row.iloc[0]['host'])
         proxies['http'] = proxy
         proxies['https'] = proxy
-        print(proxies)
         return proxies
