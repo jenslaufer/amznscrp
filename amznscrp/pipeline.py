@@ -86,13 +86,13 @@ class Pipeline:
                 {'keyword': keyword, 'filename': {'$exists': True}})
             if num == 0:
                 params.append(keyword)
-        pool = ProcessingPool(1)
+        pool = ProcessingPool(10)
         results = pool.map(self.__scrape_search_wrapper, params)
-        self.__extract_searches_features(keywords)
+        self.extract_searches_features(keywords)
 
         return results
 
-    def __extract_searches_features(self, keywords):
+    def extract_searches_features(self, keywords):
         params = []
         for keyword in keywords:
             params.append(keyword)
@@ -117,6 +117,59 @@ class Pipeline:
                             {'keyword': result['keyword']}, result, True)
                 keyword_parents_coll.replace_one(
                     {'parent': keywords_group['parent']}, {'parent': keywords_group['parent']}, True)
+
+    def scrape_product_details(self, parent_keywords):
+        keywords_coll = self.client[self.db_name][self.keyword_col_name]
+        products_coll = self.client[self.db_name][self.product_col_name]
+        fs = gridfs.GridFS(self.client[self.db_name])
+
+        keywords_df = pd.DataFrame(
+            list(keywords_coll.find({"parent": {"$in": parent_keywords}})))
+        products_df = pd.DataFrame(
+            list(products_coll.find({"bsr": {'$exists': False}})))
+        products_df = pd.merge(
+            products_df, keywords_df[['parent', 'keyword']], on="keyword", how="inner")
+
+        params = []
+        for key, row in products_df.iterrows():
+            asin = row['asin']
+            filename = "{}.html".format(asin)
+            try:
+                fs.get_last_version(filename)
+                # print("Product {} already scraped.".format(asin))
+            except Exception as e:
+                params.append(asin)
+
+        pool = ProcessingPool(10)
+        results = pool.map(self.__scrape_product_wrapper, params)
+
+        for result in results:
+            if result['content'] != None:
+                fs.put(result['content'], filename="{}.html".format(result['asin']),
+                       encoding="utf-8", contentType="text/html", doc_type="product")
+
+        params = []
+        for index, row in products_df.iterrows():
+            filename = "{}.html".format(row['asin'])
+            asin = filename[:-5]
+            try:
+                print(asin)
+                content = fs.get_last_version(filename).read()
+                params.append((asin,
+                               content))
+            except gridfs.errors.NoFile as nf:
+                print("no file: {}".format(nf))
+                products_coll.remove({'asin': asin})
+
+        start = time.time()
+        pool = ProcessingPool(20)
+        results = pool.map(self.__feature_extractor_wrapper, params)
+        print(time.time() - start)
+
+        for result in results:
+            if result != None:
+                products_coll.update_one({'asin': result['asin']}, {
+                    '$set': result}, False)
 
 
 if __name__ == '__main__':
@@ -152,5 +205,9 @@ if __name__ == '__main__':
         keyword_groups.append({'parent': keyword_arg, 'keywords': keywords})
 
     pipeline.scrape_keywords(keyword_groups)
+
     keywords = pipeline.get_keywords(keywords_args)
+
     pipeline.scrape_searches(keywords)
+
+    # pipeline.scrape_product_details(keywords)
