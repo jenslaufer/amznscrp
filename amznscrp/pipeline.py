@@ -13,11 +13,14 @@ import pandas as pd
 
 class Pipeline:
 
-    def __init__(self,  proxy, useragent, mongourl="mongodb://localhost"):
+    def __init__(self,  proxy, useragent, estimator, mongourl="mongodb://localhost"):
         self.proxy = proxy
         self.useragent = useragent
         self.scraper = scraper
         self.extractor = extractor
+        self.estimator = estimator
+        self.mongourl = mongourl
+        self.dbname = 'amazon'
         self.db = MongoClient(mongourl)['amazon']
 
         self.keyword_col_name = 'keywords'
@@ -30,6 +33,46 @@ class Pipeline:
                     for keyword in keywords_coll.find({'parent': {'$in': parents}})]
 
         return keywords
+
+    def __scrape_product(self, asin):
+        try:
+            fs = gridfs.GridFS(self.db)
+            result = self.scraper.fetch(
+                asin, self.proxy, self.useragent)
+            fs.put(result['content'], filename="{}.html".format(result['asin']),
+                   encoding="utf-8", contentType="text/html", doc_type="product")
+
+            return result
+        except Exception as e:
+            print("problem with {}: {}"+e)
+            return None
+
+    def __scrape_product_wrapper(self, asin):
+        return self.__scrape_product(asin)
+
+    def __extract_features(self, asin, content):
+        products_coll = self.db[self.product_col_name]
+        try:
+            features = self.extractor.extract_product_features(asin, content)
+
+            features['last_modified'] = datetime.datetime.utcnow()
+
+            category = features['category']
+            bsr = features['bsr']
+            sales = self.estimator.estimate_sales(bsr, category)
+            features['sales'] = sales
+
+            features['last_modified'] = datetime.datetime.utcnow()
+            products_coll.update_one({'asin': features['asin'], 'keyword': features['keyword']}, {
+                '$set': features}, True)
+
+            return features
+
+        except Exception as e:
+            print("{}: {}".format(asin, e))
+
+    def __feature_extractor_wrapper(self, args):
+        return self.__extract_features(*args)
 
     def __scrape_search(self, keyword):
         import uuid
@@ -59,11 +102,13 @@ class Pipeline:
     def __extract_searches_features(self, keyword):
         import gridfs
         import datetime
+        from pymongo import MongoClient
+        db = MongoClient(self.mongourl)['amazon']
 
         try:
-            keywords_coll = self.db[self.keyword_col_name]
-            products_coll = self.db[self.product_col_name]
-            fs = gridfs.GridFS(self.db)
+            keywords_coll = db[self.keyword_col_name]
+            products_coll = db[self.product_col_name]
+            fs = gridfs.GridFS(db)
             keyword_data = keywords_coll.find_one({'keyword': keyword})
             content = fs.get_last_version(keyword_data['filename']).read()
             results = self.extractor.extract_search_product_features(
@@ -118,13 +163,13 @@ class Pipeline:
                 keyword_parents_coll.replace_one(
                     {'parent': keywords_group['parent']}, {'parent': keywords_group['parent']}, True)
 
-    def scrape_product_details(self, parent_keywords):
-        keywords_coll = self.client[self.db_name][self.keyword_col_name]
-        products_coll = self.client[self.db_name][self.product_col_name]
-        fs = gridfs.GridFS(self.client[self.db_name])
+    def scrape_product_details(self, keywords):
+        keywords_coll = self.db[self.keyword_col_name]
+        products_coll = self.db[self.product_col_name]
+        fs = gridfs.GridFS(self.db)
 
         keywords_df = pd.DataFrame(
-            list(keywords_coll.find({"parent": {"$in": parent_keywords}})))
+            list(keywords_coll.find({"keyword": {"$in": keywords}})))
         products_df = pd.DataFrame(
             list(products_coll.find({"bsr": {'$exists': False}})))
         products_df = pd.merge(
@@ -141,12 +186,7 @@ class Pipeline:
                 params.append(asin)
 
         pool = ProcessingPool(10)
-        results = pool.map(self.__scrape_product_wrapper, params)
-
-        for result in results:
-            if result['content'] != None:
-                fs.put(result['content'], filename="{}.html".format(result['asin']),
-                       encoding="utf-8", contentType="text/html", doc_type="product")
+        pool.map(self.__scrape_product_wrapper, params)
 
         params = []
         for index, row in products_df.iterrows():
@@ -160,6 +200,7 @@ class Pipeline:
             except gridfs.errors.NoFile as nf:
                 print("no file: {}".format(nf))
                 products_coll.remove({'asin': asin})
+            break
 
         start = time.time()
         pool = ProcessingPool(20)
@@ -168,8 +209,9 @@ class Pipeline:
 
         for result in results:
             if result != None:
-                products_coll.update_one({'asin': result['asin']}, {
-                    '$set': result}, False)
+                pass
+                # products_coll.update_one({'asin': result['asin']}, {
+                #     '$set': result}, False)
 
 
 if __name__ == '__main__':
@@ -193,7 +235,7 @@ if __name__ == '__main__':
     proxy_srv = proxy.BonanzaProxy(username, password)
     useragent_srv = useragent.UserAgent()
 
-    pipeline = Pipeline(proxy_srv, useragent_srv)
+    pipeline = Pipeline(proxy_srv, useragent_srv, sales_estimator)
 
     # Scrape keyword list
     keywords_args = args.keywords
@@ -210,4 +252,4 @@ if __name__ == '__main__':
 
     pipeline.scrape_searches(keywords)
 
-    # pipeline.scrape_product_details(keywords)
+    pipeline.scrape_product_details(keywords)
