@@ -1,9 +1,11 @@
 import time
 from pathos.multiprocessing import ProcessingPool
-from . import useragent, proxy, extractor, scraper, autocompletesearch
+from . import useragent, proxy, extractor, scraper, autocompletesearch, salesestimator
+import argparse
 from pymongo import MongoClient
 import gridfs
 
+from string import ascii_lowercase
 import datetime
 import uuid
 import pandas as pd
@@ -85,9 +87,12 @@ class Pipeline:
             if num == 0:
                 params.append(keyword)
         pool = ProcessingPool(1)
-        return pool.map(self.__scrape_search_wrapper, params)
+        results = pool.map(self.__scrape_search_wrapper, params)
+        self.__extract_searches_features(keywords)
 
-    def extract_searches_features(self, keywords):
+        return results
+
+    def __extract_searches_features(self, keywords):
         params = []
         for keyword in keywords:
             params.append(keyword)
@@ -112,3 +117,40 @@ class Pipeline:
                             {'keyword': result['keyword']}, result, True)
                 keyword_parents_coll.replace_one(
                     {'parent': keywords_group['parent']}, {'parent': keywords_group['parent']}, True)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(
+        description='Scrapes keyword suggestions from Amazon Search.')
+    parser.add_argument('keywords', metavar='keywords', type=str, nargs='+',
+                        help='root keyword')
+
+    parser.add_argument('-p', '--password')
+    parser.add_argument('-u', '--username')
+
+    args = parser.parse_args()
+
+    username = args.username
+    password = args.password
+
+    sales_estimator = salesestimator.SalesEstimator(
+        path='./product_search/data/sales_estimator', force_new_model_creation=False, force_teaching=False)
+
+    proxy_srv = proxy.BonanzaProxy(username, password)
+    useragent_srv = useragent.UserAgent()
+
+    pipeline = Pipeline(proxy_srv, useragent_srv)
+
+    # Scrape keyword list
+    keywords_args = args.keywords
+    keyword_groups = []
+    for keyword_arg in keywords_args:
+        keywords = []
+        for c in ascii_lowercase:
+            keywords.append(keyword_arg+" "+c)
+        keyword_groups.append({'parent': keyword_arg, 'keywords': keywords})
+
+    pipeline.scrape_keywords(keyword_groups)
+    keywords = pipeline.get_keywords(keywords_args)
+    pipeline.scrape_searches(keywords)
