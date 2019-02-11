@@ -13,7 +13,7 @@ class Proxy:
 class BonanzaProxy(Proxy):
 
     def __init__(self, username, password):
-        path = 'amznscrp/resources/proxies.csv'
+        path = 'resources/proxies.csv'
         filepath = pkg_resources.resource_filename(__name__, path)
         self.proxies = pd.read_csv(filepath)
         self.username = username
@@ -27,5 +27,5 @@ class BonanzaProxy(Proxy):
                                          row.iloc[0]['host'])
         proxies['http'] = proxy
         proxies['https'] = proxy
-
+        print(proxies)
         return proxies

@@ -1,6 +1,6 @@
 import time
 from pathos.multiprocessing import ProcessingPool
-from . import useragent, proxy, extractor, scraper
+from . import useragent, proxy, extractor, scraper, autocompletesearch
 from pymongo import MongoClient
 import gridfs
 
@@ -74,27 +74,34 @@ class Pipeline:
         for keyword in keywords:
             num = self.db['keywords'].count_documents(
                 {'keyword': keyword, 'filename': {'$exists': True}})
-            if num == 0:
+            if num >= 0:
                 params.append(keyword)
-        pool = ProcessingPool(10)
+            break
+        pool = ProcessingPool(1)
         return pool.map(self.__scrape_search_wrapper, params)
 
     def extract_searches_features(self, keywords):
         params = []
         for keyword in keywords:
             params.append(keyword)
-        pool = ProcessingPool(20)
+        pool = ProcessingPool(1)
         return pool.map(self.__extract_searches_features_wrapper, params)
 
+    def scrape_keywords(self, keywords_groups):
+        keywords_coll = self.db[self.keyword_col_name]
+        keyword_parents_coll = self.db[self.keyword_parent_col_name]
 
-if __name__ == '__main__':
-    proxy_srv = proxy.BonanzaProxy('', '')
-    useragent_srv = useragent.UserAgent()
-    pipeline = Pipeline(proxy_srv, useragent_srv)
-    client = MongoClient()
-    db = client['amazon']
-    keywords = list(set(pd.DataFrame(list(db['keywords'].find({})))[
-        ['keyword']]['keyword'].tolist()))
-
-    pipeline.scrape_searches(keywords)
-    pipeline.extract_searches_features(keywords)
+        for keywords_group in keywords_groups:
+            num = keyword_parents_coll.count_documents(
+                {"parent": keywords_group['parent']})
+            if num == 0:
+                for keyword in keywords_group[self.keyword_col_name]:
+                    results = [{'parent': keywords_group['parent'], 'keyword':suggestion['value']}
+                               for suggestion in autocompletesearch.scrape(keyword,
+                                                                           self.proxy, self.useragent)['suggestions']]
+                    for result in results:
+                        result['last_modified'] = datetime.datetime.utcnow()
+                        keywords_coll.replace_one(
+                            {'keyword': result['keyword']}, result, True)
+                keyword_parents_coll.replace_one(
+                    {'parent': keywords_group['parent']}, {'parent': keywords_group['parent']}, True)
