@@ -1,5 +1,4 @@
 from amznscrp import useragent, proxy, extractor, scraper, pipeline, salesestimator
-from pymongo import MongoClient
 import pandas as pd
 import argparse
 
@@ -38,5 +37,6 @@ if __name__ == '__main__':
         keyword_groups.append({'parent': keyword_arg, 'keywords': keywords})
 
     pipeline.scrape_keywords(keyword_groups)
-    # pipeline.scrape_searches(keywords)
-    # pipeline.extract_searches_features(keywords)
+    keywords = pipeline.get_keywords(keywords_args)
+    pipeline.scrape_searches(keywords)
+    pipeline.extract_searches_features(keywords)

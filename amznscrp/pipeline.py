@@ -22,6 +22,13 @@ class Pipeline:
         self.keyword_parent_col_name = 'keyword_parent'
         self.product_col_name = 'products'
 
+    def get_keywords(self, parents):
+        keywords_coll = self.db[self.keyword_col_name]
+        keywords = [keyword['keyword']
+                    for keyword in keywords_coll.find({'parent': {'$in': parents}})]
+
+        return keywords
+
     def __scrape_search(self, keyword):
         import uuid
         import gridfs
@@ -70,11 +77,12 @@ class Pipeline:
         return self.__extract_searches_features(keyword)
 
     def scrape_searches(self, keywords):
+        keywords_coll = self.db[self.keyword_col_name]
         params = []
         for keyword in keywords:
-            num = self.db['keywords'].count_documents(
+            num = keywords_coll.count_documents(
                 {'keyword': keyword, 'filename': {'$exists': True}})
-            if num >= 0:
+            if num == 0:
                 params.append(keyword)
             break
         pool = ProcessingPool(1)
@@ -84,7 +92,7 @@ class Pipeline:
         params = []
         for keyword in keywords:
             params.append(keyword)
-        pool = ProcessingPool(1)
+        pool = ProcessingPool(10)
         return pool.map(self.__extract_searches_features_wrapper, params)
 
     def scrape_keywords(self, keywords_groups):
