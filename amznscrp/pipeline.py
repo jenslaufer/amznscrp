@@ -21,14 +21,14 @@ class Pipeline:
         self.estimator = estimator
         self.mongourl = mongourl
         self.dbname = 'amazon'
-        self.db = MongoClient(self.mongourl)['amazon']
 
         self.keyword_col_name = 'keywords'
         self.keyword_parent_col_name = 'keyword_parent'
         self.product_col_name = 'products'
 
     def get_keywords(self, parents):
-        keywords_coll = self.db[self.keyword_col_name]
+        db = MongoClient(self.mongourl)[self.dbname]
+        keywords_coll = db[self.keyword_col_name]
         keywords = [keyword['keyword']
                     for keyword in keywords_coll.find({'parent': {'$in': parents}})]
 
@@ -36,9 +36,12 @@ class Pipeline:
 
     def __scrape_product(self, asin):
         import gridfs
+        from pymongo import MongoClient
+
+        db = MongoClient(self.mongourl)[self.dbname]
 
         try:
-            fs = gridfs.GridFS(self.db)
+            fs = gridfs.GridFS(db)
             result = self.scraper.fetch(
                 asin, self.proxy, self.useragent)
             fs.put(result['content'], filename="{}.html".format(result['asin']),
@@ -56,8 +59,11 @@ class Pipeline:
         import uuid
         import gridfs
         import datetime
+        from pymongo import MongoClient
 
-        products_coll = self.db[self.product_col_name]
+        db = MongoClient(self.mongourl)[self.dbname]
+
+        products_coll = db[self.product_col_name]
         try:
             print("extracting features for {}".format(asin))
             features = self.extractor.extract_product_features(asin, content)
@@ -85,9 +91,12 @@ class Pipeline:
         import uuid
         import gridfs
         import datetime
+        from pymongo import MongoClient
+
+        db = MongoClient(self.mongourl)[self.dbname]
         try:
-            keywords_coll = self.db[self.keyword_col_name]
-            fs = gridfs.GridFS(self.db)
+            keywords_coll = db[self.keyword_col_name]
+            fs = gridfs.GridFS(db)
 
             result = self.scraper.search(
                 keyword, self.proxy, self.useragent)
@@ -134,7 +143,8 @@ class Pipeline:
         return self.__extract_searches_features(keyword)
 
     def scrape_searches(self, keywords):
-        keywords_coll = self.db[self.keyword_col_name]
+        db = MongoClient(self.mongourl)[self.dbname]
+        keywords_coll = db[self.keyword_col_name]
         params = []
         for keyword in keywords:
             num = keywords_coll.count_documents(
@@ -155,8 +165,9 @@ class Pipeline:
         return pool.map(self.__extract_searches_features_wrapper, params)
 
     def scrape_keywords(self, keywords_groups):
-        keywords_coll = self.db[self.keyword_col_name]
-        keyword_parents_coll = self.db[self.keyword_parent_col_name]
+        db = MongoClient(self.mongourl)[self.dbname]
+        keywords_coll = db[self.keyword_col_name]
+        keyword_parents_coll = db[self.keyword_parent_col_name]
 
         for keywords_group in keywords_groups:
             num = keyword_parents_coll.count_documents(
@@ -174,9 +185,10 @@ class Pipeline:
                     {'parent': keywords_group['parent']}, {'parent': keywords_group['parent']}, True)
 
     def scrape_product_details(self, keywords):
-        keywords_coll = self.db[self.keyword_col_name]
-        products_coll = self.db[self.product_col_name]
-        fs = gridfs.GridFS(self.db)
+        db = MongoClient(self.mongourl)[self.dbname]
+        keywords_coll = db[self.keyword_col_name]
+        products_coll = db[self.product_col_name]
+        fs = gridfs.GridFS(db)
 
         keywords_df = pd.DataFrame(
             list(keywords_coll.find({"keyword": {"$in": keywords}})))
@@ -247,10 +259,10 @@ if __name__ == '__main__':
             keywords.append(keyword_arg+" "+c)
         keyword_groups.append({'parent': keyword_arg, 'keywords': keywords})
 
-    # pipeline.scrape_keywords(keyword_groups)
+    pipeline.scrape_keywords(keyword_groups)
 
     keywords = pipeline.get_keywords(keywords_args)
 
-    # pipeline.scrape_searches(keywords)
+    pipeline.scrape_searches(keywords)
 
     pipeline.scrape_product_details(keywords)
