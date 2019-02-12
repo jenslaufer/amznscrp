@@ -21,7 +21,7 @@ class Pipeline:
         self.estimator = estimator
         self.mongourl = mongourl
         self.dbname = 'amazon'
-        self.db = MongoClient(mongourl)['amazon']
+        self.db = MongoClient(self.mongourl)['amazon']
 
         self.keyword_col_name = 'keywords'
         self.keyword_parent_col_name = 'keyword_parent'
@@ -35,6 +35,8 @@ class Pipeline:
         return keywords
 
     def __scrape_product(self, asin):
+        import gridfs
+
         try:
             fs = gridfs.GridFS(self.db)
             result = self.scraper.fetch(
@@ -51,8 +53,13 @@ class Pipeline:
         return self.__scrape_product(asin)
 
     def __extract_features(self, asin, content):
+        import uuid
+        import gridfs
+        import datetime
+
         products_coll = self.db[self.product_col_name]
         try:
+            print("extracting features for {}".format(asin))
             features = self.extractor.extract_product_features(asin, content)
 
             features['last_modified'] = datetime.datetime.utcnow()
@@ -63,7 +70,7 @@ class Pipeline:
             features['sales'] = sales
 
             features['last_modified'] = datetime.datetime.utcnow()
-            products_coll.update_one({'asin': features['asin'], 'keyword': features['keyword']}, {
+            products_coll.update_one({'asin': features['asin']}, {
                 '$set': features}, True)
 
             return features
@@ -85,6 +92,7 @@ class Pipeline:
             result = self.scraper.search(
                 keyword, self.proxy, self.useragent)
             filename = '{}.html'.format(str(uuid.uuid4()))
+            print("scraping search for {} to {}".format(keyword, filename))
             fs.put(result['content'], filename=filename,
                    encoding="utf-8", contentType="text/html", doc_type="search")
 
@@ -94,7 +102,7 @@ class Pipeline:
             keywords_coll.update_one({'keyword': result['keyword']}, {
                 '$set': keyword_metadata}, True)
         except Exception as e:
-            print("problem with {}: {}".format(keyword, e))
+            print("problem scraping search with {}: {}".format(keyword, e))
 
     def __scrape_search_wrapper(self, keyword):
         return self.__scrape_search(keyword)
@@ -115,6 +123,8 @@ class Pipeline:
                 keyword, content)
             for result in results:
                 result['last_modified'] = datetime.datetime.utcnow()
+                print("extracted {} from search {}".format(
+                    result['asin'], keyword))
                 products_coll.update_one({'asin': result['asin'], 'keyword': keyword}, {
                     '$set': result}, True)
         except Exception as e:
@@ -181,7 +191,7 @@ class Pipeline:
             filename = "{}.html".format(asin)
             try:
                 fs.get_last_version(filename)
-                # print("Product {} already scraped.".format(asin))
+                print("Product {} already scraped.".format(asin))
             except Exception as e:
                 params.append(asin)
 
@@ -193,25 +203,16 @@ class Pipeline:
             filename = "{}.html".format(row['asin'])
             asin = filename[:-5]
             try:
-                print(asin)
                 content = fs.get_last_version(filename).read()
                 params.append((asin,
                                content))
             except gridfs.errors.NoFile as nf:
                 print("no file: {}".format(nf))
-                products_coll.remove({'asin': asin})
-            break
 
         start = time.time()
         pool = ProcessingPool(20)
-        results = pool.map(self.__feature_extractor_wrapper, params)
+        pool.map(self.__feature_extractor_wrapper, params)
         print(time.time() - start)
-
-        for result in results:
-            if result != None:
-                pass
-                # products_coll.update_one({'asin': result['asin']}, {
-                #     '$set': result}, False)
 
 
 if __name__ == '__main__':
@@ -246,10 +247,10 @@ if __name__ == '__main__':
             keywords.append(keyword_arg+" "+c)
         keyword_groups.append({'parent': keyword_arg, 'keywords': keywords})
 
-    pipeline.scrape_keywords(keyword_groups)
+    # pipeline.scrape_keywords(keyword_groups)
 
     keywords = pipeline.get_keywords(keywords_args)
 
-    pipeline.scrape_searches(keywords)
+    # pipeline.scrape_searches(keywords)
 
     pipeline.scrape_product_details(keywords)
