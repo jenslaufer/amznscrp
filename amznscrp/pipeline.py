@@ -120,6 +120,7 @@ class Pipeline:
         import gridfs
         import datetime
         from pymongo import MongoClient
+
         db = MongoClient(self.mongourl)['amazon']
 
         try:
@@ -161,7 +162,7 @@ class Pipeline:
         params = []
         for keyword in keywords:
             params.append(keyword)
-        pool = ProcessingPool(20)
+        pool = ProcessingPool(10)
         return pool.map(self.__extract_searches_features_wrapper, params)
 
     def scrape_keywords(self, keywords_groups):
@@ -222,7 +223,7 @@ class Pipeline:
                 print("no file: {}".format(nf))
 
         start = time.time()
-        pool = ProcessingPool(20)
+        pool = ProcessingPool(10)
         pool.map(self.__feature_extractor_wrapper, params)
         print(time.time() - start)
 
