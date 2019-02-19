@@ -1,6 +1,6 @@
 import time
 from pathos.multiprocessing import ProcessingPool
-from . import useragent, proxy, extractor, scraper, autocompletesearch, salesestimator
+from . import extractor, scraper, autocompletesearch, salesestimator
 import argparse
 from pymongo import MongoClient
 import gridfs
@@ -9,6 +9,8 @@ from string import ascii_lowercase
 import datetime
 import uuid
 import pandas as pd
+from pyuseragent import useragent
+from scrpproxies import proxy
 
 
 class Pipeline:

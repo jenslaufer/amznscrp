@@ -8,8 +8,6 @@ import json
 import urllib
 import datetime
 from urllib.parse import quote_plus
-from . import proxy
-from . import useragent
 
 
 def search_api(api_key, api_secret, affiliate_id, keywords, region='DE', search_index='All', pages=1):

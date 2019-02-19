@@ -9,9 +9,10 @@ setup(
     install_requires=['requests', 'bottlenose',
                       'lxml',
                       'scikit-learn',
-                      'pandas', 'numpy', 'get_smarties'
+                      'pandas', 'numpy', 'get_smarties',
+                      'pyuseragent', 'scrpproxies'
                       ],
-    version='0.0.1',
+    version='0.2.0',
     license='MIT',
     description='Tools to scrp Amz',
     include_package_data=True
