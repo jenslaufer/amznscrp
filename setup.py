@@ -10,7 +10,6 @@ setup(
                       'lxml',
                       'scikit-learn',
                       'pandas', 'numpy', 'get_smarties',
-                      'pyuseragent', 'scrpproxies'
                       ],
     version='0.2.0',
     license='MIT',
